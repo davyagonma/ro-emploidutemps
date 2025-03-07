@@ -2,3 +2,4 @@ ortools
 pandas
 streamlit
 numpy
+fpdf
