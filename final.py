@@ -10,7 +10,7 @@ def create_schedule(profs, cours, salles):
         return None
     
     jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
-    heures = list(range(8, 20))
+    heures = list(range(8, 19))
     
     X = {}
     for p in profs:
@@ -35,25 +35,48 @@ def create_schedule(profs, cours, salles):
         emploi_temps = []
         for j in jours:
             for h in heures:
-                for p in profs:
-                    for c in cours:
-                        for s in salles:
-                            if X[p, c, s, j, h].solution_value() > 0.5:
-                                emploi_temps.append([j, f"{h}h - {h+1}h", c, p, s])
+                if h == 13:
+                    emploi_temps.append([j, f"{h}h - {h+1}h", "PAUSE DÉJEUNER", "", ""])
+                else:
+                    for p in profs:
+                        for c in cours:
+                            for s in salles:
+                                if X[p, c, s, j, h].solution_value() > 0.5:
+                                    emploi_temps.append([j, f"{h}h - {h+1}h", c, p, s])
         return pd.DataFrame(emploi_temps, columns=['Jour', 'Heure', 'Cours', 'Professeur', 'Salle'])
     else:
         st.error("Aucune solution optimale trouvée")
         return None
 
 def generate_pdf(emploi_temps):
-    pdf = FPDF()
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", style='', size=12)
-    pdf.cell(200, 10, "Emploi du Temps", ln=True, align='C')
+    pdf.set_font("Arial", style='B', size=14)
+    pdf.cell(280, 10, "Emploi du Temps", ln=True, align='C')
     pdf.ln(10)
+    
+    pdf.set_font("Arial", size=10)
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(40, 10, "Jour", border=1, fill=True)
+    pdf.cell(40, 10, "Heure", border=1, fill=True)
+    pdf.cell(70, 10, "Cours", border=1, fill=True)
+    pdf.cell(70, 10, "Professeur", border=1, fill=True)
+    pdf.cell(50, 10, "Salle", border=1, fill=True)
+    pdf.ln()
+    
     for index, row in emploi_temps.iterrows():
-        pdf.cell(200, 10, f"{row['Jour']} - {row['Heure']} : {row['Cours']} ({row['Professeur']}, {row['Salle']})", ln=True)
+        if "PAUSE" in row['Cours']:
+            pdf.set_fill_color(255, 200, 200)  # Rouge clair pour les pauses
+        else:
+            pdf.set_fill_color(255, 255, 255)  # Blanc pour les cours
+        pdf.cell(40, 10, row['Jour'], border=1, fill=True)
+        pdf.cell(40, 10, row['Heure'], border=1, fill=True)
+        pdf.cell(70, 10, row['Cours'], border=1, fill=True)
+        pdf.cell(70, 10, row['Professeur'], border=1, fill=True)
+        pdf.cell(50, 10, row['Salle'], border=1, fill=True)
+        pdf.ln()
+    
     pdf_output = "emploi_temps.pdf"
     pdf.output(pdf_output)
     return pdf_output
@@ -76,3 +99,4 @@ if st.button("Générer l'Emploi du Temps"):
         pdf_file = generate_pdf(emploi_temps)
         with open(pdf_file, "rb") as f:
             st.download_button("Télécharger l'Emploi du Temps en PDF", f, file_name=pdf_file)
+
