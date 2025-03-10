@@ -104,7 +104,7 @@ if st.button("Générer l'Emploi du Temps"):
     emploi_temps = create_schedule(profs, cours, salles)
     if emploi_temps is not None:
         st.write("### Emploi du Temps Généré")
-        st.dataframe(emploi_temps.set_index('Heure').T)  # Afficher avec jours en colonnes et heures en lignes
+        st.dataframe(emploi_temps)  # Afficher avec jours en colonnes et heures en lignes
         pdf_file = generate_pdf(emploi_temps)
         with open(pdf_file, "rb") as f:
             st.download_button("Télécharger l'Emploi du Temps en PDF", f, file_name=pdf_file)
