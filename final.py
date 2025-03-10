@@ -10,7 +10,7 @@ def create_schedule(profs, cours, salles):
         return None
     
     jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']
-    heures = list(range(8, 19))
+    heures = [(8, 10), (10.25, 12.25), (14, 16)]  # Créneaux horaires
     
     X = {}
     for p in profs:
@@ -35,53 +35,49 @@ def create_schedule(profs, cours, salles):
         emploi_temps = []
         for j in jours:
             for h in heures:
-                if h == 13:
-                    emploi_temps.append([j, f"{h}h - {h+1}h", "PAUSE DÉJEUNER", "", ""])
-                else:
-                    for p in profs:
-                        for c in cours:
-                            for s in salles:
-                                if X[p, c, s, j, h].solution_value() > 0.5:
-                                    emploi_temps.append([j, f"{h}h - {h+1}h", c, p, s])
+                for p in profs:
+                    for c in cours:
+                        for s in salles:
+                            if X[p, c, s, j, h].solution_value() > 0.5:
+                                emploi_temps.append([j, f"{int(h[0])}h-{int(h[1])}h", c, p, s])
         return pd.DataFrame(emploi_temps, columns=['Jour', 'Heure', 'Cours', 'Professeur', 'Salle'])
     else:
         st.error("Aucune solution optimale trouvée")
         return None
 
 def generate_pdf(emploi_temps):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", style='B', size=14)
-    pdf.cell(280, 10, "Emploi du Temps", ln=True, align='C')
+    pdf.set_font("Arial", style='B', size=12)
+    pdf.cell(200, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
+    pdf.cell(200, 10, "MASTER 1 EN GENIE LOGICIEL - SECURITE INFORMATIQUE - SYSTEME D'INFORMATION ET RESEAUX INFORMATIQUES", ln=True, align='C')
+    pdf.cell(200, 10, "SEMAINE DU 10 AU 15 MARS 2025", ln=True, align='C')
+    pdf.cell(200, 10, "SALLE DE COURS : EN LIGNE/PRESENTIELLE EN ZONE MASTER A2-1/2", ln=True, align='C')
     pdf.ln(10)
     
-    pdf.set_font("Arial", size=10)
-    pdf.set_fill_color(200, 200, 200)
-    pdf.cell(40, 10, "Jour", border=1, fill=True)
-    pdf.cell(40, 10, "Heure", border=1, fill=True)
-    pdf.cell(70, 10, "Cours", border=1, fill=True)
-    pdf.cell(70, 10, "Professeur", border=1, fill=True)
-    pdf.cell(50, 10, "Salle", border=1, fill=True)
+    pdf.set_font("Arial", style='B', size=10)
+    column_widths = [40, 35, 35, 35, 35, 35]
+    header = ["Heure", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"]
+    for col, width in zip(header, column_widths):
+        pdf.cell(width, 10, col, border=1, align='C')
     pdf.ln()
     
-    for index, row in emploi_temps.iterrows():
-        if "PAUSE" in row['Cours']:
-            pdf.set_fill_color(255, 200, 200)  # Rouge clair pour les pauses
-        else:
-            pdf.set_fill_color(255, 255, 255)  # Blanc pour les cours
-        pdf.cell(40, 10, row['Jour'], border=1, fill=True)
-        pdf.cell(40, 10, row['Heure'], border=1, fill=True)
-        pdf.cell(70, 10, row['Cours'], border=1, fill=True)
-        pdf.cell(70, 10, row['Professeur'], border=1, fill=True)
-        pdf.cell(50, 10, row['Salle'], border=1, fill=True)
+    pdf.set_font("Arial", size=10)
+    horaires = [("08:00-10:00"), ("10:15-12:15"), ("12:15-14:00"), ("14:00-16:00")]
+    for h in horaires:
+        pdf.cell(40, 10, h, border=1, align='C')
+        for j in header[1:]:
+            cours_info = emploi_temps.loc[(emploi_temps['Jour'] == j) & (emploi_temps['Heure'] == h)]
+            texte = "\n".join([f"{row['Cours']} ({row['Professeur']} - {row['Salle']})" for _, row in cours_info.iterrows()])
+            pdf.cell(35, 10, texte if texte else "PAUSE" if "12:15-14:00" in h else "", border=1, align='C')
         pdf.ln()
     
     pdf_output = "emploi_temps.pdf"
     pdf.output(pdf_output)
     return pdf_output
 
-st.title("Générateur d'Emploi du Temps Automatisé (Groupe 13)")
+st.title("Générateur d'Emploi du Temps Automatisé")
 
 nb_cours = st.number_input("Nombre de cours", min_value=1, max_value=10, step=1)
 nb_profs = st.number_input("Nombre de professeurs", min_value=1, max_value=10, step=1)
@@ -99,4 +95,5 @@ if st.button("Générer l'Emploi du Temps"):
         pdf_file = generate_pdf(emploi_temps)
         with open(pdf_file, "rb") as f:
             st.download_button("Télécharger l'Emploi du Temps en PDF", f, file_name=pdf_file)
+
 
