@@ -55,8 +55,8 @@ def generate_pdf(emploi_temps):
     pdf.add_page()
     pdf.set_font("Arial", style='', size=12)
     
-    pdf.image("logo_gauche.png", 10, 8, 33)
-    pdf.image("logo_droite.png", 160, 8, 33)
+    #pdf.image("logo_gauche.png", 10, 8, 33)
+    #pdf.image("logo_droite.png", 160, 8, 33)
     
     pdf.cell(200, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
     pdf.cell(200, 10, "MASTER 1 - GENIE LOGICIEL - SECURITE INFORMATIQUE", ln=True, align='C')
