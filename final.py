@@ -64,6 +64,7 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         st.error("Aucune solution optimale trouvée")
         return None
 
+
 def generate_pdf(emploi_temps):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -98,7 +99,7 @@ def generate_pdf(emploi_temps):
             cours_info = emploi_temps[(emploi_temps["Jour"] == j) & (emploi_temps["Heure"].str.startswith(f"{h}h"))]
             if not cours_info.empty:
                 row = cours_info.iloc[0]
-                emploi_grouped[j][h] = (row['Cours'], row['Professeur'])
+                emploi_grouped[j][h] = (row['Cours'], row['Professeur'], row['Salle'])
             else:
                 emploi_grouped[j][h] = None
 
@@ -108,7 +109,7 @@ def generate_pdf(emploi_temps):
 
         for j in jours:
             if emploi_grouped[j][h] is not None:
-                cours, prof = emploi_grouped[j][h]
+                cours, prof, salle = emploi_grouped[j][h]
 
                 # Vérifier si le cours continue sur plusieurs heures
                 if h == 8 or emploi_grouped[j][h - 1] != emploi_grouped[j][h]:  
@@ -117,10 +118,11 @@ def generate_pdf(emploi_temps):
                         span += 1
 
                     # Fusionner les cellules verticalement
-                    pdf.cell(40, 10 * span, f"{cours} ({prof})", border=1, align="C")
+                    contenu = f"{cours}\n{prof}\n({salle})"
+                    pdf.multi_cell(40, 10 * span, contenu, border=1, align="C")
                 else:
                     # Ne rien écrire car la cellule est fusionnée avec celle du dessus
-                    pass
+                    pdf.cell(40, 10, "", border=1)
             else:
                 pdf.cell(40, 10, "", border=1)  # Cellule vide
 
