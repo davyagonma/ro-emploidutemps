@@ -64,10 +64,6 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         st.error("Aucune solution optimale trouvée")
         return None
 
-from fpdf import FPDF
-
-from fpdf import FPDF
-
 class EmploiTempsPDF(FPDF):
     def header(self):
         self.set_font("Arial", style='B', size=14)
