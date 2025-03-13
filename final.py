@@ -42,7 +42,15 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
                             for h in heures:
                                 solver.Add(X[p, c, s, j, h] == 0)
 
-    # ✅ Fonction objectif : Minimiser le nombre total d'heures inutilisées
+    # ✅ Contrainte 4 : Assigner chaque cours à un professeur uniquement disponible pendant les heures
+    for c in cours:
+        for s in salles:
+            for j in jours:
+                for h in heures:
+                    # Le cours doit être assigné à un professeur disponible pendant cette heure
+                    solver.Add(sum(X[p, c, s, j, h] for p in profs if j in profs_dispo.get(p, [])) == 1)
+
+    # ✅ Fonction objectif : Minimiser le nombre total d'heures inutilisées (ou maximiser l'équité)
     solver.Minimize(sum(X[p, c, s, j, h] for p in profs for c in cours for s in salles for j in jours for h in heures))
 
     # Résolution du problème
@@ -63,6 +71,7 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
     else:
         st.error("Aucune solution optimale trouvée")
         return None
+
 
 
 def generate_pdf(emploi_temps):
