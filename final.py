@@ -65,7 +65,7 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         return None
 
 
-generate_pdf(emploi_temps):
+def generate_pdf(emploi_temps):
     pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
