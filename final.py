@@ -64,34 +64,35 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         st.error("Aucune solution optimale trouvée")
         return None
 
+from fpdf import FPDF
+
+class EmploiTempsPDF(FPDF):
+    def header(self):
+        self.set_font("Arial", style='B', size=14)
+        self.cell(280, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
+        self.cell(280, 10, "MASTER 1 - GENIE LOGICIEL - SECURITE INFORMATIQUE", ln=True, align='C')
+        self.cell(280, 10, "SEMAINE DU 10 AU 15 MARS 2025", ln=True, align='C')
+        self.cell(280, 10, "SALLE DE COURS : EN LIGNE/PRESENTIELLE", ln=True, align='C')
+        self.ln(10)
 
 def generate_pdf(emploi_temps):
-    pdf = FPDF(orientation='L', unit='mm', format='A4')
+    pdf = EmploiTempsPDF(orientation='L', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", style='B', size=14)
-
-    # Entête
-    pdf.cell(280, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
-    pdf.cell(280, 10, "MASTER 1 - GENIE LOGICIEL - SECURITE INFORMATIQUE", ln=True, align='C')
-    pdf.cell(280, 10, "SEMAINE DU 10 AU 15 MARS 2025", ln=True, align='C')
-    pdf.cell(280, 10, "SALLE DE COURS : EN LIGNE/PRESENTIELLE", ln=True, align='C')
-    pdf.ln(10)
-
     pdf.set_font("Arial", size=10)
-    pdf.set_fill_color(200, 200, 200)
 
-    # Liste des jours et heures
+    # Jours et heures
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
     heures = list(range(8, 19))
 
-    # En-tête du tableau : Jours en haut
+    # Entête du tableau
+    pdf.set_fill_color(200, 200, 200)
     pdf.cell(40, 10, "Heure/Jour", border=1, fill=True, align="C")
     for j in jours:
         pdf.cell(40, 10, j, border=1, fill=True, align="C")
     pdf.ln()
 
-    # Création d'un dictionnaire pour stocker les heures occupées
+    # Stockage des occupations
     emploi_grouped = {}
     for j in jours:
         emploi_grouped[j] = {}
@@ -103,35 +104,38 @@ def generate_pdf(emploi_temps):
             else:
                 emploi_grouped[j][h] = None
 
-    # Remplir le tableau : Heures en colonne, Jours en ligne
+    # Suivi des fusions
+    merged_cells = {}
+
+    # Construction du tableau
     for h in heures:
-        pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, fill=True, align="C")  # Colonne des heures
+        pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, align="C")  # Colonne des heures
 
         for j in jours:
+            if (j, h) in merged_cells:
+                continue  # On saute si déjà fusionné
+
             if emploi_grouped[j][h] is not None:
                 cours, prof, salle = emploi_grouped[j][h]
+                
+                # Détecter la durée du cours
+                span = 1
+                while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
+                    merged_cells[(j, h + span)] = True
+                    span += 1
 
-                # Vérifier si le cours continue sur plusieurs heures
-                if h == 8 or emploi_grouped[j][h - 1] != emploi_grouped[j][h]:  
-                    span = 1
-                    while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
-                        span += 1
-
-                    # Fusionner les cellules verticalement
-                    contenu = f"{cours}\n{prof}\n({salle})"
-                    pdf.multi_cell(40, 10 * span, contenu, border=1, align="C")
-                else:
-                    # Ne rien écrire car la cellule est fusionnée avec celle du dessus
-                    pdf.cell(40, 10, "", border=1)
+                # Fusionner et centrer le texte
+                pdf.multi_cell(40, 10 * span, f"{cours}\n{prof}\n({salle})", border=1, align="C")
             else:
                 pdf.cell(40, 10, "", border=1)  # Cellule vide
 
         pdf.ln()
 
-    # Sauvegarde du fichier
-    pdf_output = "emploi_temps.pdf"
+    # Sauvegarde
+    pdf_output = "emploi_temps_corrige.pdf"
     pdf.output(pdf_output)
     return pdf_output
+
 
 # === Interface Streamlit ===
 st.title("📅 Générateur d'Emploi du Temps Automatisé IFRI-UAC")
