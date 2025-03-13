@@ -43,7 +43,7 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
                                 solver.Add(X[p, c, s, j, h] == 0)
 
     # ✅ Fonction objectif : Minimiser le nombre total d'heures inutilisées
-    solver.Minimize(sum(X[p, c, s, j, h] for p in profs for c in cours for s in salles for j in jours for h in heures))
+    solver.Maximize(sum(X[p, c, s, j, h] for p in profs for c in cours for s in salles for j in jours for h in heures))
 
     # Résolution du problème
     status = solver.Solve()
