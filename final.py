@@ -113,15 +113,19 @@ def generate_pdf(emploi_temps):
 
                 # Vérifier si le cours continue sur plusieurs heures
                 if h == 8 or emploi_grouped[j][h - 1] != emploi_grouped[j][h]:  
-                    span = 1
-                    while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
-                        span += 1
+                    #span = 1
+                    #while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
+                     #   span += 1
 
                     # Fusionner les cellules verticalement
-                    pdf.cell(40, 10 * span, f"{cours} ({prof})", border=1, align="C")
+                    #pdf.cell(40, 10 * span, f"{cours} ({prof})", border=1, align="C")
+                    pdf.set_fill_color(255, 200, 200)
+                    pdf.cell(40, 10, f"{cours} ({prof})", border=1, align="C", fill=True)
                 else:
                     # Ne rien écrire car la cellule est fusionnée avec celle du dessus
-                    pass
+                    #pass
+                    pdf.set_fill_color(255, 200, 200)
+                    pdf.cell(40, 10, "", border=1, fill=True)
             else:
                 pdf.cell(40, 10, "", border=1)  # Cellule vide
 
