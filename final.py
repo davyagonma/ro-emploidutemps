@@ -66,6 +66,8 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
 
 from fpdf import FPDF
 
+from fpdf import FPDF
+
 class EmploiTempsPDF(FPDF):
     def header(self):
         self.set_font("Arial", style='B', size=14)
@@ -92,42 +94,24 @@ def generate_pdf(emploi_temps):
         pdf.cell(40, 10, j, border=1, fill=True, align="C")
     pdf.ln()
 
-    # Stockage des occupations
-    emploi_grouped = {}
-    for j in jours:
-        emploi_grouped[j] = {}
-        for h in heures:
-            cours_info = emploi_temps[(emploi_temps["Jour"] == j) & (emploi_temps["Heure"].str.startswith(f"{h}h"))]
-            if not cours_info.empty:
-                row = cours_info.iloc[0]
-                emploi_grouped[j][h] = (row['Cours'], row['Professeur'], row['Salle'])
-            else:
-                emploi_grouped[j][h] = None
-
-    # Suivi des fusions
-    merged_cells = {}
-
     # Construction du tableau
     for h in heures:
         pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, align="C")  # Colonne des heures
 
         for j in jours:
-            if (j, h) in merged_cells:
-                continue  # On saute si déjà fusionné
-
-            if emploi_grouped[j][h] is not None:
-                cours, prof, salle = emploi_grouped[j][h]
-                
-                # Détecter la durée du cours
-                span = 1
-                while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
-                    merged_cells[(j, h + span)] = True
-                    span += 1
-
-                # Fusionner et centrer le texte
-                pdf.multi_cell(40, 10 * span, f"{cours}\n{prof}\n({salle})", border=1, align="C")
+            # Récupérer les informations du cours
+            cours_info = emploi_temps[(emploi_temps["Jour"] == j) & (emploi_temps["Heure"].str.startswith(f"{h}h"))]
+            
+            if not cours_info.empty:
+                row = cours_info.iloc[0]
+                cours = row['Cours']
+                prof = row['Professeur']
+                salle = row['Salle']
+                texte = f"{cours}\n{prof}\n({salle})"
             else:
-                pdf.cell(40, 10, "", border=1)  # Cellule vide
+                texte = ""  # Case vide
+
+            pdf.multi_cell(40, 10, texte, border=1, align="C")  # Affichage sans fusion
 
         pdf.ln()
 
@@ -135,6 +119,7 @@ def generate_pdf(emploi_temps):
     pdf_output = "emploi_temps_corrige.pdf"
     pdf.output(pdf_output)
     return pdf_output
+
 
 
 # === Interface Streamlit ===
