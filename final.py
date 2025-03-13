@@ -65,66 +65,72 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         return None
 
 
-class EmploiTempsPDF(FPDF):
-    def header(self):
-        self.set_font("Arial", style='B', size=14)
-        self.cell(280, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
-        self.cell(280, 10, "MASTER 1 - GENIE LOGICIEL - SECURITE INFORMATIQUE", ln=True, align='C')
-        self.cell(280, 10, "SEMAINE DU 10 AU 15 MARS 2025", ln=True, align='C')
-        self.cell(280, 10, "SALLE DE COURS : EN LIGNE/PRESENTIELLE", ln=True, align='C')
-        self.ln(10)
-
 def generate_pdf(emploi_temps):
-    pdf = EmploiTempsPDF(orientation='L', unit='mm', format='A4')
+    pdf = FPDF(orientation='L', unit='mm', format='A4')
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=10)
+    pdf.set_font("Arial", style='B', size=14)
 
-    # Jours et heures
+    # Entête
+    pdf.cell(280, 10, "INSTITUT DE FORMATION ET DE RECHERCHE EN INFORMATIQUE", ln=True, align='C')
+    pdf.cell(280, 10, "MASTER 1 - GENIE LOGICIEL - SECURITE INFORMATIQUE", ln=True, align='C')
+    pdf.cell(280, 10, "SEMAINE DU 10 AU 15 MARS 2025", ln=True, align='C')
+    pdf.cell(280, 10, "SALLE DE COURS : EN LIGNE/PRESENTIELLE", ln=True, align='C')
+    pdf.ln(10)
+
+    pdf.set_font("Arial", size=10)
+    pdf.set_fill_color(200, 200, 200)
+
+    # Liste des jours et heures
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
     heures = list(range(8, 19))
 
-    # Largeur et hauteur des cases
-    largeur_case = 40
-    hauteur_case = 10
-
-    # 🎨 Couleur de fond pour l'entête
-    pdf.set_fill_color(200, 200, 200)
-
-    # ✅ Entête du tableau (Jours de la semaine)
-    pdf.cell(largeur_case, hauteur_case, "Heure/Jour", border=1, fill=True, align="C")
-    for jour in jours:
-        pdf.cell(largeur_case, hauteur_case, jour, border=1, fill=True, align="C")
+    # En-tête du tableau : Jours en haut
+    pdf.cell(40, 10, "Heure/Jour", border=1, fill=True, align="C")
+    for j in jours:
+        pdf.cell(40, 10, j, border=1, fill=True, align="C")
     pdf.ln()
 
-    # ✅ Remplissage du tableau (Heures & Cours)
-    for heure in heures:
-        pdf.cell(largeur_case, hauteur_case, f"{heure}h - {heure+1}h", border=1, align="C")  # Colonne des heures
-
-        for jour in jours:
-            # Récupération du cours, professeur et salle
-            cours_info = emploi_temps[(emploi_temps["Jour"] == jour) & (emploi_temps["Heure"] == f"{heure}h")]
-
+    # Création d'un dictionnaire pour stocker les heures occupées
+    emploi_grouped = {}
+    for j in jours:
+        emploi_grouped[j] = {}
+        for h in heures:
+            cours_info = emploi_temps[(emploi_temps["Jour"] == j) & (emploi_temps["Heure"].str.startswith(f"{h}h"))]
             if not cours_info.empty:
-                row = cours_info.iloc[0]  # Prendre la première correspondance
-                cours = row['Cours']
-                prof = row['Professeur']
-                salle = row['Salle']
-                texte = f"{cours}\n{prof}\n({salle})"
-
-                # 🎨 Coloration des cases contenant un cours
-                pdf.set_fill_color(173, 216, 230)  # Bleu clair
-                pdf.multi_cell(largeur_case, hauteur_case, texte, border=1, align="C", fill=True)
+                row = cours_info.iloc[0]
+                emploi_grouped[j][h] = (row['Cours'], row['Professeur'])
             else:
-                pdf.multi_cell(largeur_case, hauteur_case, "", border=1, align="C")  # Case vide sans fusion
+                emploi_grouped[j][h] = None
+
+    # Remplir le tableau : Heures en colonne, Jours en ligne
+    for h in heures:
+        pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, fill=True, align="C")  # Colonne des heures
+
+        for j in jours:
+            if emploi_grouped[j][h] is not None:
+                cours, prof = emploi_grouped[j][h]
+
+                # Vérifier si le cours continue sur plusieurs heures
+                if h == 8 or emploi_grouped[j][h - 1] != emploi_grouped[j][h]:  
+                    span = 1
+                    while h + span in heures and emploi_grouped[j][h + span] == emploi_grouped[j][h]:
+                        span += 1
+
+                    # Fusionner les cellules verticalement
+                    pdf.cell(40, 10 * span, f"{cours} ({prof})", border=1, align="C")
+                else:
+                    # Ne rien écrire car la cellule est fusionnée avec celle du dessus
+                    pass
+            else:
+                pdf.cell(40, 10, "", border=1)  # Cellule vide
 
         pdf.ln()
 
-    # Sauvegarde du PDF
+    # Sauvegarde du fichier
     pdf_output = "emploi_temps.pdf"
     pdf.output(pdf_output)
     return pdf_output
-
 
 
 
