@@ -104,21 +104,23 @@ def generate_pdf(emploi_temps):
                 emploi_grouped[j][h] = None
 
     # Remplir le tableau : Heures en colonne, Jours en ligne
+    i=0
     for h in heures:
         pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, fill=True, align="C")  # Colonne des heures
 
         for j in jours:
+            i+=50
             if emploi_grouped[j][h] is not None:
                 cours, prof, salle = emploi_grouped[j][h]
 
                 # Vérifier si le cours continue sur plusieurs heures
                 if h == 8 or emploi_grouped[j][h - 1] != emploi_grouped[j][h]:  
-                    pdf.set_fill_color(255, 200, j+100)
+                    pdf.set_fill_color(255, 200, i)
                     pdf.cell(40, 10, f"{cours} ({prof}) en {salle}", border=1, align="C", fill=True)
                 else:
                     # Ne rien écrire car la cellule est fusionnée avec celle du dessus
                     #pass
-                    pdf.set_fill_color(255, 200, j+100)
+                    pdf.set_fill_color(255, 200, i)
                     pdf.cell(40, 10, "", border=1, fill=True)
             else:
                 pdf.cell(40, 10, "", border=1)  # Cellule vide
