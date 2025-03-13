@@ -65,8 +65,6 @@ def create_schedule(profs, cours, salles, cours_heures, profs_dispo):
         return None
 
 
-from fpdf import FPDF
-
 class EmploiTempsPDF(FPDF):
     def header(self):
         self.set_font("Arial", style='B', size=14)
@@ -86,40 +84,47 @@ def generate_pdf(emploi_temps):
     jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"]
     heures = list(range(8, 19))
 
-    # Entête du tableau
-    pdf.set_fill_color(200, 200, 200)  # Gris clair pour l'entête
-    pdf.cell(40, 10, "Heure/Jour", border=1, fill=True, align="C")
-    for j in jours:
-        pdf.cell(40, 10, j, border=1, fill=True, align="C")
+    # Largeur et hauteur des cases
+    largeur_case = 40
+    hauteur_case = 10
+
+    # 🎨 Couleur de fond pour l'entête
+    pdf.set_fill_color(200, 200, 200)
+
+    # ✅ Entête du tableau (Jours de la semaine)
+    pdf.cell(largeur_case, hauteur_case, "Heure/Jour", border=1, fill=True, align="C")
+    for jour in jours:
+        pdf.cell(largeur_case, hauteur_case, jour, border=1, fill=True, align="C")
     pdf.ln()
 
-    # Construction du tableau
-    for h in heures:
-        pdf.cell(40, 10, f"{h}h - {h+1}h", border=1, align="C")  # Colonne des heures
+    # ✅ Remplissage du tableau (Heures & Cours)
+    for heure in heures:
+        pdf.cell(largeur_case, hauteur_case, f"{heure}h - {heure+1}h", border=1, align="C")  # Colonne des heures
 
-        for j in jours:
-            # Récupérer les informations du cours
-            cours_info = emploi_temps[(emploi_temps["Jour"] == j) & (emploi_temps["Heure"].str.startswith(f"{h}h"))]
-            
+        for jour in jours:
+            # Récupération du cours, professeur et salle
+            cours_info = emploi_temps[(emploi_temps["Jour"] == jour) & (emploi_temps["Heure"] == f"{heure}h")]
+
             if not cours_info.empty:
-                row = cours_info.iloc[0]
+                row = cours_info.iloc[0]  # Prendre la première correspondance
                 cours = row['Cours']
                 prof = row['Professeur']
                 salle = row['Salle']
-                texte = f"{cours}\n{prof} ({salle})"
+                texte = f"{cours}\n{prof}\n({salle})"
 
-                # 🎨 Couleur pour les cours
+                # 🎨 Coloration des cases contenant un cours
                 pdf.set_fill_color(173, 216, 230)  # Bleu clair
-                pdf.multi_cell(40, 10, texte, border=1, align="C", fill=True)
+                pdf.multi_cell(largeur_case, hauteur_case, texte, border=1, align="C", fill=True)
             else:
-                pdf.multi_cell(40, 10, "", border=1, align="C")  # Case vide sans couleur
+                pdf.multi_cell(largeur_case, hauteur_case, "", border=1, align="C")  # Case vide sans fusion
 
         pdf.ln()
 
-    # Sauvegarde
-    pdf_output = "emploi_temps_corrige.pdf"
+    # Sauvegarde du PDF
+    pdf_output = "emploi_temps.pdf"
     pdf.output(pdf_output)
     return pdf_output
+
 
 
 
